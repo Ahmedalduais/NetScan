@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wails VS Code Clone</title>
+    
+    <!-- 1. ربط Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. ربط مكتبة الأيقونات (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- 3. خط الكود (Fira Code) -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- 4. إعدادات Tailwind المخصصة لمحاكاة ألوان VS Code -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'vs-bg': '#1e1e1e',
+                        'vs-sidebar': '#252526',
+                        'vs-active': '#37373d',
+                        'vs-border': '#3c3c3c',
+                        'vs-text': '#cccccc',
+                        'vs-accent': '#007acc',
+                        'vs-white': '#ffffff',
+                        'vs-string': '#ce9178',
+                        'vs-keyword': '#569cd6',
+                        'vs-variable': '#9cdcfe',
+                    },
+                    fontFamily: {
+                        'code': ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- 5. بعض التنسيقات الضرورية -->
+    <style>
+        /* إخفاء السكرول بار مع الحفاظ على التمرير */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1e1e; }
+        ::-webkit-scrollbar-thumb { background: #424242; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        
+        /* جعل الجسم يأخذ كامل الشاشة */
+        html, body { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background-color: #1e1e1e;
+            color: #cccccc;
+        }
+    </style>
+</head>
+<body class="font-code">
+    <!-- الحاوية الرئيسية للتطبيق -->
+    <div id="app" class="h-screen w-screen flex flex-col"></div>
+
+    <!-- ربط ملف الجافاسكريبت الخاص بـ Wails -->
+    <script src="./src/main.js" type="module"></script>
+</body>
+</html>
