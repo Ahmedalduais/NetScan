@@ -75,3 +75,31 @@ type BlockResult struct {
 type IsAdminResult struct {
 	IsAdmin bool `json:"is_admin"`
 }
+
+// ProcessNetIO holds real per-process network byte counters (from ETW on Windows).
+type ProcessNetIO struct {
+	PID       int32  `json:"pid"`
+	BytesRecv uint64 `json:"bytes_recv"`
+	BytesSent uint64 `json:"bytes_sent"`
+}
+
+// ProcessDetail holds information about a running process with network activity.
+type ProcessDetail struct {
+	PID             int32   `json:"pid"`
+	Name            string  `json:"name"`
+	ExePath         string  `json:"exe_path"`
+	ConnectionCount int     `json:"connection_count"`
+	RXBytes         uint64  `json:"rx_bytes"`
+	TXBytes         uint64  `json:"tx_bytes"`
+	RXBps           float64 `json:"rx_bps"`
+	TXBps           float64 `json:"tx_bps"`
+	RXBpsStr        string  `json:"rx_bps_str"`
+	TXBpsStr        string  `json:"tx_bps_str"`
+	Estimated       bool    `json:"estimated"`
+}
+
+// IconResult holds a base64-encoded icon for a process.
+type IconResult struct {
+	PID  int32  `json:"pid"`
+	Icon string `json:"icon"` // base64 PNG data URI
+}

@@ -7,24 +7,28 @@ import (
 )
 
 // NetworkController serves as the Wails binding layer (Controller pattern).
-// It wraps ScannerService, FirewallService, and ThroughputMonitor, exposing
-// thread-safe methods to the frontend.
-// Reference: Service-Controller pattern as described in Go standard project layout guidelines.
+// It wraps ScannerService, FirewallService, ThroughputMonitor, and NetIOMonitor.
 type NetworkController struct {
-	scanner   *ScannerService
-	firewall  *FirewallService
+	scanner    *ScannerService
+	firewall   *FirewallService
 	throughput *ThroughputMonitor
-	scanMu    sync.Mutex
+	netio      *NetIOMonitor
+	scanMu     sync.Mutex
 }
 
-// NewNetworkController creates a new controller with the singleton scanner and firewall.
+// NewNetworkController creates a new controller with all services.
 func NewNetworkController() *NetworkController {
 	nc := &NetworkController{
-		scanner:   NewScannerService(),
-		firewall:  NewFirewallService(),
+		scanner:    NewScannerService(),
+		firewall:   NewFirewallService(),
 		throughput: NewThroughputMonitor(),
+		netio:      NewNetIOMonitor(),
 	}
 	nc.throughput.Start()
+	if err := nc.netio.Start(); err != nil {
+		// Non-critical: ETW may fail on restricted systems, fallback to estimation
+		println("NetIOMonitor start:", err.Error())
+	}
 	return nc
 }
 
@@ -33,10 +37,11 @@ func (nc *NetworkController) Start(ctx context.Context) {
 	nc.scanner.Start(ctx)
 }
 
-// Stop cleanly shuts down the scanner and throughput monitor.
+// Stop cleanly shuts down all services.
 func (nc *NetworkController) Stop() {
 	nc.scanner.Stop()
 	nc.throughput.Stop()
+	nc.netio.Stop()
 }
 
 // ScanNetwork is the main binding method called from the frontend.
@@ -185,4 +190,21 @@ func (nc *NetworkController) GetBlocked() []BlockedEntry {
 // IsAdmin checks if the app has administrator privileges.
 func (nc *NetworkController) IsAdmin() bool {
 	return nc.firewall.IsAdmin()
+}
+
+// GetProcessIcon returns a base64 data URI for the icon of a process.
+func (nc *NetworkController) GetProcessIcon(pid int32) string {
+	return GetProcessIcon(pid)
+}
+
+// GetProcessDetails returns per-PID process info with estimated bandwidth.
+// The frontend passes interfaces (with connections) and throughput data.
+func (nc *NetworkController) GetProcessDetails(interfaces []InterfaceInfo) []ProcessDetail {
+	return GetProcessDetails(interfaces, nc.throughput.GetThroughput())
+}
+
+// GetProcessNetIO returns real per-process byte counters from ETW (Windows only).
+// On non-Windows platforms it returns an empty slice.
+func (nc *NetworkController) GetProcessNetIO() []ProcessNetIO {
+	return nc.netio.GetCounters()
 }

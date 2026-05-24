@@ -18,6 +18,18 @@ export function GetPlatform() {
   return window['go']['main']['App']['GetPlatform']();
 }
 
+export function GetProcessDetails(arg1) {
+  return window['go']['main']['App']['GetProcessDetails'](arg1);
+}
+
+export function GetProcessIcon(arg1) {
+  return window['go']['main']['App']['GetProcessIcon'](arg1);
+}
+
+export function GetProcessNetIO() {
+  return window['go']['main']['App']['GetProcessNetIO']();
+}
+
 export function GetThroughput() {
   return window['go']['main']['App']['GetThroughput']();
 }

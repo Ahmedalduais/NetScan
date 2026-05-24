@@ -78,3 +78,18 @@ func (a *App) GetThroughput() []backend.ThroughputData {
 func (a *App) GetInterfaceThroughput(name string) (backend.ThroughputData, bool) {
 	return a.ctrl.GetInterfaceThroughput(name)
 }
+
+// GetProcessIcon delegates to the controller.
+func (a *App) GetProcessIcon(pid int32) string {
+	return a.ctrl.GetProcessIcon(pid)
+}
+
+// GetProcessDetails delegates to the controller.
+func (a *App) GetProcessDetails(interfaces []backend.InterfaceInfo) []backend.ProcessDetail {
+	return a.ctrl.GetProcessDetails(interfaces)
+}
+
+// GetProcessNetIO returns real per-process network byte counters from the OS.
+func (a *App) GetProcessNetIO() []backend.ProcessNetIO {
+	return a.ctrl.GetProcessNetIO()
+}

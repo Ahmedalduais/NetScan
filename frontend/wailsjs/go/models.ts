@@ -173,6 +173,54 @@ export namespace backend {
 		    return a;
 		}
 	}
+	export class ProcessDetail {
+	    pid: number;
+	    name: string;
+	    exe_path: string;
+	    connection_count: number;
+	    rx_bytes: number;
+	    tx_bytes: number;
+	    rx_bps: number;
+	    tx_bps: number;
+	    rx_bps_str: string;
+	    tx_bps_str: string;
+	    estimated: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProcessDetail(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.pid = source["pid"];
+	        this.name = source["name"];
+	        this.exe_path = source["exe_path"];
+	        this.connection_count = source["connection_count"];
+	        this.rx_bytes = source["rx_bytes"];
+	        this.tx_bytes = source["tx_bytes"];
+	        this.rx_bps = source["rx_bps"];
+	        this.tx_bps = source["tx_bps"];
+	        this.rx_bps_str = source["rx_bps_str"];
+	        this.tx_bps_str = source["tx_bps_str"];
+	        this.estimated = source["estimated"];
+	    }
+	}
+	export class ProcessNetIO {
+	    pid: number;
+	    bytes_recv: number;
+	    bytes_sent: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProcessNetIO(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.pid = source["pid"];
+	        this.bytes_recv = source["bytes_recv"];
+	        this.bytes_sent = source["bytes_sent"];
+	    }
+	}
 	export class ScanOptions {
 	    include_loopback: boolean;
 	    timeout: number;

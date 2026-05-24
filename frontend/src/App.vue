@@ -21,6 +21,7 @@
         :locale="currentLocale"
         :blocked-items="blockedItems"
         :throughput="throughputData"
+        :pid-io-data="pidIOData"
         @ctx-ip="onContextIP"
         @ctx-conn="onContextConn"
         @unblock="onUnblockFromList"
@@ -43,7 +44,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { QuickScan, BlockTarget, UnblockTarget, GetThroughput } from '../wailsjs/go/main/App'
+import { QuickScan, BlockTarget, UnblockTarget, GetThroughput, GetProcessNetIO } from '../wailsjs/go/main/App'
 import Toolbar from './components/Toolbar.vue'
 import NetworkTable from './components/NetworkTable.vue'
 import StatusBar from './components/StatusBar.vue'
@@ -60,6 +61,7 @@ const statusMessage = ref('')
 const hasPermissionError = ref(false)
 const blockedItems = ref([])
 const throughputData = ref([])
+const pidIOData = ref([])
 let throughputTimer = null
 
 const currentLocale = computed(() => locale.value)
@@ -67,15 +69,72 @@ const currentDir = computed(() => locale.value === 'ar' ? 'rtl' : 'ltr')
 
 const processesList = computed(() => {
   if (!scanResult.value || !scanResult.value.interfaces) return []
-  const seen = new Map()
-  for (const iface of scanResult.value.interfaces) {
-    for (const conn of iface.connections || []) {
-      if (conn.pid > 0 && !seen.has(conn.pid)) {
-        seen.set(conn.pid, { pid: conn.pid, name: conn.process_name || 'Unknown', iface: iface.name })
-      }
+  const pidMap = new Map()
+  const ifaceConnCounts = {}
+  const ifacePidCounts = {}
+
+  // Build ETW lookup map for real per-PID counters
+  const etwMap = {}
+  for (const io of pidIOData.value) {
+    if (io.pid > 0) {
+      etwMap[io.pid] = { rx: io.bytes_recv, tx: io.bytes_sent }
     }
   }
-  return Array.from(seen.values()).sort((a, b) => a.pid - b.pid)
+
+  // Count connections per (PID, interface) and per interface
+  for (const iface of scanResult.value.interfaces) {
+    const ifaceName = iface.name
+    if (!ifaceConnCounts[ifaceName]) ifaceConnCounts[ifaceName] = 0
+    for (const conn of iface.connections || []) {
+      if (conn.pid <= 0) continue
+      ifaceConnCounts[ifaceName]++
+      const key = conn.pid + '|' + ifaceName
+      ifacePidCounts[key] = (ifacePidCounts[key] || 0) + 1
+
+      if (!pidMap.has(conn.pid)) {
+        const etw = etwMap[conn.pid]
+        const hasReal = etw && (etw.rx > 0 || etw.tx > 0)
+        pidMap.set(conn.pid, {
+          pid: conn.pid,
+          name: conn.process_name || 'Unknown',
+          iface: ifaceName,
+          connectionCount: 0,
+          rx_bps: 0,
+          tx_bps: 0,
+          rx_bps_str: hasReal ? formatBits(etw.rx * 8) : '—',
+          tx_bps_str: hasReal ? formatBits(etw.tx * 8) : '—',
+          estimated: !hasReal,
+        })
+      }
+      pidMap.get(conn.pid).connectionCount++
+    }
+  }
+
+  // Allocate bandwidth proportionally from throughput data (fallback for PIDs without ETW)
+  for (const td of throughputData.value) {
+    const ifaceName = td.interface
+    const totalConns = ifaceConnCounts[ifaceName]
+    if (!totalConns || totalConns === 0) continue
+    for (const [pid, proc] of pidMap) {
+      if (!proc.estimated) continue // skip if real ETW data exists
+      const key = pid + '|' + ifaceName
+      const pidConns = ifacePidCounts[key] || 0
+      if (pidConns === 0) continue
+      const share = pidConns / totalConns
+      proc.rx_bps += td.rx_bps * share
+      proc.tx_bps += td.tx_bps * share
+    }
+  }
+
+  // Format bit rates for estimated PIDs
+  for (const proc of pidMap.values()) {
+    if (proc.estimated) {
+      proc.rx_bps_str = formatBits(proc.rx_bps)
+      proc.tx_bps_str = formatBits(proc.tx_bps)
+    }
+  }
+
+  return Array.from(pidMap.values()).sort((a, b) => a.pid - b.pid)
 })
 
 const filteredInterfaces = computed(() => {
@@ -94,6 +153,11 @@ function startThroughputPolling() {
     try {
       throughputData.value = await GetThroughput()
     } catch { /* ignore polling errors */ }
+
+    // Also poll per-process network IO data (ETW on Windows)
+    try {
+      pidIOData.value = await GetProcessNetIO()
+    } catch { /* ignore */ }
   }, 1000)
 }
 
@@ -346,6 +410,14 @@ function toggleLanguage() {
   locale.value = locale.value === 'en' ? 'ar' : 'en'
   document.documentElement.lang = locale.value
   document.documentElement.dir = locale.value === 'ar' ? 'rtl' : 'ltr'
+}
+
+function formatBits(bps) {
+  if (!bps || bps <= 0) return '—'
+  if (bps >= 1_000_000_000) return (bps / 1_000_000_000).toFixed(2) + ' Gbps'
+  if (bps >= 1_000_000) return (bps / 1_000_000).toFixed(2) + ' Mbps'
+  if (bps >= 1_000) return (bps / 1_000).toFixed(2) + ' Kbps'
+  return Math.round(bps) + ' bps'
 }
 
 onMounted(() => {

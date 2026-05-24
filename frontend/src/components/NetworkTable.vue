@@ -101,11 +101,13 @@
 
           <!-- Blocked PIDs -->
           <div v-if="blockedPIDs.length > 0">
-            <div class="text-[10px] text-net-muted mb-1 mt-3 font-medium">Processes (PID)</div>
+            <div class="text-[10px] text-net-muted mb-1 mt-3 font-medium">{{ $t('table.processes') }} (PID)</div>
             <div v-for="b in blockedPIDs" :key="b.id"
               class="flex items-center gap-2 px-2.5 py-2 bg-net-surface rounded border border-red-900/30"
             >
-              <span class="text-[9px] px-1 py-0.5 rounded bg-orange-500/10 text-orange-400 font-mono">PID</span>
+              <span class="w-5 h-5 rounded flex-none flex items-center justify-center text-[8px] font-bold text-white shadow-sm"
+                :style="{ backgroundColor: processColor(b.target.replace('PID ', '')) }"
+              >{{ processInitial(b.target.replace('PID ', '')) }}</span>
               <span class="font-mono text-xs flex-1">{{ b.target }}</span>
               <span class="text-[9px] px-1 py-0.5 rounded bg-net-danger/10 text-net-danger">BLOCKED</span>
               <button @click="$emit('unblock', b.id)"
@@ -131,17 +133,30 @@
             class="flex items-center gap-2 px-2.5 py-2 bg-net-surface rounded border"
             :class="isBlockedPID(p.pid) ? 'border-red-900/30' : 'border-net-border'"
           >
-            <span class="font-mono text-[9px] px-1 py-0.5 rounded bg-net-accent/10 text-net-accent">{{ p.pid }}</span>
-            <span class="text-xs flex-1 truncate">{{ p.name }}</span>
-            <span v-if="p.iface" class="text-[9px] text-net-muted truncate max-w-[80px]">{{ p.iface }}</span>
-            <span v-if="isBlockedPID(p.pid)" class="text-[9px] px-1 py-0.5 rounded bg-net-danger/10 text-net-danger">BLOCKED</span>
+            <!-- App icon avatar -->
+            <span class="w-6 h-6 rounded flex-none flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
+              :style="{ backgroundColor: processColor(p.name) }"
+            >{{ processInitial(p.name) }}</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-medium truncate">{{ p.name }}</span>
+                <span class="font-mono text-[9px] text-net-muted">PID {{ p.pid }}</span>
+              </div>
+              <div class="flex items-center gap-2 text-[9px] text-net-muted">
+                <span>{{ p.connectionCount }} conn</span>
+                <span v-if="p.rx_bps_str && p.rx_bps_str !== '—'" class="text-green-400/80">▼{{ p.rx_bps_str }}</span>
+                <span v-if="p.tx_bps_str && p.tx_bps_str !== '—'" class="text-blue-400/80">▲{{ p.tx_bps_str }}</span>
+                <span v-if="p.estimated" class="text-[8px] opacity-50" title="Estimated from connection share">~</span>
+              </div>
+            </div>
+            <span v-if="isBlockedPID(p.pid)" class="text-[9px] px-1.5 py-0.5 rounded bg-net-danger/10 text-net-danger font-medium">BLOCKED</span>
             <button v-if="!isBlockedPID(p.pid)"
               @click="$emit('block-pid', { pid: p.pid, name: p.name, iface: p.iface })"
-              class="text-[9px] px-2 py-0.5 rounded bg-net-danger/10 text-net-danger border border-net-danger/30 hover:bg-net-danger/20 transition-colors"
-            >BLOCK</button>
+              class="text-[9px] px-2 py-1 rounded bg-net-danger/10 text-net-danger border border-net-danger/30 hover:bg-net-danger/20 transition-colors font-medium"
+            >{{ $t('table.block') }}</button>
             <button v-else
               @click="unblockPID(p.pid)"
-              class="text-[9px] px-2 py-0.5 rounded bg-net-bg text-net-muted hover:text-net-text border border-net-border hover:border-net-text/30 transition-colors"
+              class="text-[9px] px-2 py-1 rounded bg-net-bg text-net-muted hover:text-net-text border border-net-border hover:border-net-text/30 transition-colors font-medium"
             >{{ $t('table.unblock') }}</button>
           </div>
         </div>
@@ -233,6 +248,8 @@
                   <th class="text-left py-1 px-1 font-medium cursor-pointer hover:text-net-text" @click="setSort('status')">{{ $t('table.state') }}<span class="text-[9px]" v-html="sortArrow('status')"></span></th>
                   <th class="text-left py-1 px-1 font-medium cursor-pointer hover:text-net-text" @click="setSort('pid')">{{ $t('table.pid') }}<span class="text-[9px]" v-html="sortArrow('pid')"></span></th>
                   <th class="text-left py-1 font-medium cursor-pointer hover:text-net-text" @click="setSort('process_name')">{{ $t('table.process') }}<span class="text-[9px]" v-html="sortArrow('process_name')"></span></th>
+                  <th class="text-left py-1 px-1 font-medium text-net-muted">▼ RX</th>
+                  <th class="text-left py-1 px-1 font-medium text-net-muted">▲ TX</th>
                 </tr>
               </thead>
               <tbody>
@@ -255,7 +272,17 @@
                   <td class="py-1 px-1 font-mono text-net-muted">{{ formatRemote(conn) }}</td>
                   <td class="py-1 px-1"><span class="font-mono" :class="statusClass(conn.status)">{{ conn.status || '—' }}</span></td>
                   <td class="py-1 px-1 font-mono text-net-muted">{{ conn.pid > 0 ? conn.pid : '—' }}</td>
-                  <td class="py-1 font-mono text-net-muted max-w-[100px] truncate" :title="conn.process_name">{{ conn.process_name || '—' }}</td>
+                  <td class="py-1 font-mono text-net-muted max-w-[120px] truncate" :title="conn.process_name">
+                    <span v-if="conn.pid > 0 && conn.process_name" class="flex items-center gap-1">
+                      <span class="w-3.5 h-3.5 rounded flex-none flex items-center justify-center text-[7px] font-bold text-white shadow-sm"
+                        :style="{ backgroundColor: processColor(conn.process_name) }"
+                      >{{ processInitial(conn.process_name) }}</span>
+                      <span class="truncate">{{ conn.process_name }}</span>
+                    </span>
+                    <span v-else>—</span>
+                  </td>
+                  <td class="py-1 px-1 font-mono text-[9px]" :class="pidTpMap[conn.pid] && pidTpMap[conn.pid].rx !== '—' ? 'text-green-400/80' : 'text-net-muted/30'">{{ pidTpMap[conn.pid] ? pidTpMap[conn.pid].rx : '—' }}<span v-if="pidTpMap[conn.pid] && !pidTpMap[conn.pid].real && pidTpMap[conn.pid].rx !== '—'" class="text-[7px] opacity-40 ml-0.5">~</span></td>
+                  <td class="py-1 px-1 font-mono text-[9px]" :class="pidTpMap[conn.pid] && pidTpMap[conn.pid].tx !== '—' ? 'text-blue-400/80' : 'text-net-muted/30'">{{ pidTpMap[conn.pid] ? pidTpMap[conn.pid].tx : '—' }}<span v-if="pidTpMap[conn.pid] && !pidTpMap[conn.pid].real && pidTpMap[conn.pid].tx !== '—'" class="text-[7px] opacity-40 ml-0.5">~</span></td>
                 </tr>
               </tbody>
             </table>
@@ -276,6 +303,7 @@ const props = defineProps({
   blockedItems: { type: Array, default: () => [] },
   throughput: { type: Array, default: () => [] },
   processes: { type: Array, default: () => [] },
+  pidIOData: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['ctx-ip', 'ctx-conn', 'unblock', 'block-pid', 'unblock-pid'])
@@ -290,6 +318,24 @@ const sortDir = ref('asc')
 const selectedIface = computed(() => {
   if (viewType.value !== 'iface' || !viewId.value || !props.interfaces) return null
   return props.interfaces.find(i => i.name === viewId.value) || null
+})
+
+// PID throughput lookup (real ETW data preferred, proportional fallback from processes)
+const pidTpMap = computed(() => {
+  const m = {}
+  // Real ETW data
+  for (const io of props.pidIOData || []) {
+    if (io.pid > 0 && (io.bytes_recv > 0 || io.bytes_sent > 0)) {
+      m[io.pid] = { rx: formatBits(io.bytes_recv * 8), tx: formatBits(io.bytes_sent * 8), real: true }
+    }
+  }
+  // Fill in missing PIDs with proportional estimates
+  for (const p of props.processes || []) {
+    if (!m[p.pid]) {
+      m[p.pid] = { rx: p.rx_bps_str, tx: p.tx_bps_str, real: false }
+    }
+  }
+  return m
 })
 
 // Blocked items computed
@@ -373,6 +419,22 @@ function statusClass(status) {
   if (s === 'TIME_WAIT' || s === 'CLOSE_WAIT') return 'text-yellow-400'
   return 'text-net-muted'
 }
+// Process icon helpers
+const avatarColors = [
+  '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
+  '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
+  '#14B8A6', '#D946EF', '#0EA5E9', '#22C55E', '#EAB308',
+]
+function processColor(name) {
+  if (!name) return avatarColors[0]
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash) + name.charCodeAt(i)
+  return avatarColors[Math.abs(hash) % avatarColors.length]
+}
+function processInitial(name) {
+  return (name && name.length > 0) ? name[0].toUpperCase() : '?'
+}
+
 function copyToClipboard(text) {
   try { navigator.clipboard.writeText(text) } catch {
     const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'

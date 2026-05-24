@@ -10,6 +10,12 @@ export function GetInterfaceThroughput(arg1:string):Promise<backend.ThroughputDa
 
 export function GetPlatform():Promise<string>;
 
+export function GetProcessDetails(arg1:Array<backend.InterfaceInfo>):Promise<Array<backend.ProcessDetail>>;
+
+export function GetProcessIcon(arg1:number):Promise<string>;
+
+export function GetProcessNetIO():Promise<Array<backend.ProcessNetIO>>;
+
 export function GetThroughput():Promise<Array<backend.ThroughputData>>;
 
 export function IsAdmin():Promise<boolean>;
