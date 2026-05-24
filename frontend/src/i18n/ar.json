@@ -1,0 +1,69 @@
+{
+  "app": {
+    "title": "NetScan - ماسح واجهات الشبكة",
+    "subtitle": "محلل فوري لواجهات الشبكة والاتصالات"
+  },
+  "toolbar": {
+    "scan": "🔍 فحص الآن",
+    "scanning": "جارٍ الفحص...",
+    "auto_refresh": "تحديث تلقائي",
+    "language": "English",
+    "filter": "تصفية حسب الاسم...",
+    "include_loopback": "عرض الواجهة العكسية"
+  },
+  "table": {
+    "interface": "الواجهة",
+    "status": "الحالة",
+    "mac": "عنوان MAC",
+    "ip_addresses": "عناوين IP",
+    "connections": "الاتصالات",
+    "protocol": "البروتوكول",
+    "local_port": "المنفذ",
+    "remote": "جهة بعيدة",
+    "state": "الحالة",
+    "pid": "معرف العملية",
+    "process": "العملية",
+    "flags": "العلامات",
+    "mtu": "MTU",
+    "up": "فعال",
+    "down": "معطل",
+    "no_data": "لم يتم العثور على واجهات. اضغط 'فحص الآن' للبدء.",
+    "no_connections": "لا توجد اتصالات نشطة",
+    "listening": "استماع",
+    "established": "مُقام",
+    "time_wait": "انتظار زمني",
+    "close_wait": "انتظار إغلاق",
+    "copy": "نسخ",
+    "copied": "تم النسخ!",
+    "ipv4": "IPv4",
+    "ipv6": "IPv6",
+    "expand": "توسيع",
+    "collapse": "طي",
+    "block": "حظر",
+    "blocked": "محظور",
+    "unblock": "إلغاء الحظر",
+    "block_ip": "حظر IP",
+    "block_pid": "حظر PID",
+    "cancel": "إلغاء",
+    "select_hint": "اختر واجهة من اللوحة اليسرى",
+    "no_blocked": "لا توجد عناصر محظورة.",
+    "no_blocked_ips": "لا توجد عناوين IP محظورة.",
+    "no_blocked_pids": "لا توجد معرفات عمليات محظورة.",
+    "no_processes": "لم يتم العثور على عمليات.",
+    "processes": "العمليات",
+    "blocked_items": "العناصر المحظورة",
+    "unblock_confirm": "هل أنت متأكد من إلغاء حظر هذا العنصر؟",
+    "interface_label": "الواجهة"
+  },
+  "status": {
+    "ready": "جاهز. اضغط 'فحص الآن' لتحليل واجهات الشبكة.",
+    "scanning": "جارٍ فحص واجهات الشبكة...",
+    "completed": "اكتمل الفحص في {duration}مللي ثانية — {interfaces} واجهات، {connections} اتصال",
+    "error": "خطأ في الفحص: {error}",
+    "permission_warning": "الصلاحيات محدودة: بعض بيانات الاتصالات قد لا تكون متاحة. يُرجى التشغيل كمسؤول/جذر للوصول الكامل."
+  },
+  "languages": {
+    "en": "الإنجليزية",
+    "ar": "العربية"
+  }
+}
