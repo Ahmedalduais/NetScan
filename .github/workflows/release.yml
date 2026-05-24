@@ -51,30 +51,8 @@ jobs:
           name: NetScan-Linux
           path: netscan
 
-  build-macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
-      - run: wails build -platform darwin/amd64 -o NetScan-Intel.app
-      - run: wails build -platform darwin/arm64 -o NetScan-Silicon.app
-      - run: |
-          mkdir -p macdist
-          cp build/bin/NetScan-Intel.app macdist/
-          cp build/bin/NetScan-Silicon.app macdist/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: NetScan-macOS
-          path: macdist/
-
   release:
-    needs: [build-windows, build-linux, build-macos]
+    needs: [build-windows, build-linux]
     runs-on: ubuntu-22.04
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -85,7 +63,6 @@ jobs:
           mkdir release
           cp NetScan-Windows/NetScan.exe release/
           cp NetScan-Linux/netscan release/
-          cp NetScan-macOS/*.app release/
       - uses: softprops/action-gh-release@v2
         with:
           files: release/*
